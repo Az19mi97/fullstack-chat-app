@@ -3,10 +3,10 @@ const router = express.Router();
 
 router.post("/", (req, res) => {
   const { userId, message } = req.body;
-  console.log("Modtaget besked:", message); // <-- dette vises i terminalen
+  console.log("Message received: ", message);
 
-  const aiReply = `Du skrev: ${message}`;
-  res.json({ reply: aiReply }); // <-- dette sender respons til curl
+  const aiReply = `You wrote: ${message}`;
+  res.json({ reply: aiReply });
 });
 
 module.exports = router;

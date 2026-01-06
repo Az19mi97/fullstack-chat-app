@@ -1,50 +1,65 @@
 import React, { useState } from "react";
-import { sendMessage } from "../services/api";
 
-const ChatInput = ({ userId, onNewMessage }) => {
-  const [message, setMessage] = useState("");
+//Chat input component handles user typing and sending messages
+function ChatInput({ userId, onNewMessage }) {
+  const [text, setText] = useState(""); //The current input text
+  const [loading, setLoading] = useState(false); //Loading state while sending
 
-  const handleSend = async () => {
-    if (!message.trim()) return;
+  const sendMessage = async () => {
+    if (!text.trim()) return; //Ignoring empty messages
+
+    //Showing the user's message
+    onNewMessage({ sender: "user", text });
+    
+    setLoading(true);
 
     try {
-      // Send besked til backend
-      const reply = await sendMessage(userId, message);
+      //Sending messages to backend
+      const res = await fetch("http://localhost:5050/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          message: text,
+        }),
+      });
 
-      // Callback til parent (App.js) for at tilføje både brugerbesked og AI-svar
-      onNewMessage({ sender: "user", text: message });
-      onNewMessage({ sender: "bot", text: reply });
+      const data = await res.json();
 
-      setMessage(""); // tøm inputfelt
-    } catch (error) {
-      console.error("Fejl ved sending:", error);
+      //The ChatBot's reply
+      onNewMessage({ sender: "bot", text: data.reply });
+    } catch (err) {
+      //Showing error if backend is not connected
+      onNewMessage({
+        sender: "bot",
+        text: "❌ Could not connect to backend",
+      });
     }
-  };
 
-  const handleKeyPress = (e) => {
-    if (e.key === "Enter") {
-      handleSend();
-    }
+    setText("");
+    setLoading(false); //Resetting loading state
   };
 
   return (
     <div className="flex mt-4">
       <input
-        type="text"
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        onKeyPress={handleKeyPress}
-        placeholder="Skriv din besked..."
-        className="flex-1 border p-2 rounded"
+        className="border flex-1 p-2 rounded-l"
+        placeholder="Type a message..."
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && sendMessage()}
       />
       <button
-        onClick={handleSend}
-        className="ml-2 px-4 bg-blue-500 text-white rounded"
+        className="bg-blue-500 text-white px-4 rounded-r"
+        onClick={sendMessage}
+        disabled={loading} //Preventing multiple sends while loading
       >
-        Send
+        {loading ? "..." : "Send"}
       </button>
     </div>
   );
-};
+}
 
 export default ChatInput;
